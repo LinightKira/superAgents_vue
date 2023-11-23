@@ -3,7 +3,7 @@ import { onMounted, provide, ref } from 'vue'
 import axios from '../http/http.ts'
 import { IResData } from '../models/common.ts'
 import { useRoute, useRouter } from 'vue-router'
-import { IAgent, IDispatcher } from '../models/agent.ts'
+import { IAgent, IDispatcher,IDispatchUnit } from '../models/agent.ts'
 import { ArrowLeft, Edit, Promotion } from '@element-plus/icons-vue'
 import AgentDispatchers from '../components/layout/agentDispatcher/agentDispatchers_view.vue'
 const route = useRoute()
@@ -158,6 +158,11 @@ function confirmClick() {
     console.log('保存')
 }
 
+
+const handleEdit = (row: IDispatchUnit) => {
+console.log(row)
+}
+
 </script>
 <template>
     <div class="top-line">
@@ -180,7 +185,7 @@ function confirmClick() {
         <template #header>
             <h4>{{ isCreateDispatcher ? '新增节点' : '编辑节点' }}</h4>
         </template>
-        <template #default>
+        <template #default="scope">
             <div>
                 <h3>节点名称</h3>
                 <el-input v-model="Dispatcher.name" placeholder="请填写..." maxlength="20" show-word-limit />
@@ -188,7 +193,7 @@ function confirmClick() {
                 <el-input v-model="Dispatcher.description" placeholder="请填写..." maxlength="30" show-word-limit />
                 <h3>执行助理</h3>
                 <div>
-                    <el-table :data="Dispatcher.dispatch_units" style="width: 100%">
+                    <el-table :data="Dispatcher.dispatch_units" style="width: 100%" @row-click="handleEdit(scope.row)">
                         <el-table-column prop="agent_unit.name" label="助理名称" width="180" />
                         <el-table-column prop="next_action" label="下一步设置" width="180" />
                         <el-table-column prop="auto_next" label="自动执行到下一步" />

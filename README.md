@@ -1,3 +1,7 @@
+# 这是一个产品经理，通过AI和各种教程+自己的想法拼凑成的项目
+# 很不完善，仅供学习和交流
+
+
 # Vue 3 + TypeScript + Vite
 
 This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
