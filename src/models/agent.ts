@@ -29,14 +29,14 @@ export interface IDispatcher {
 
 export interface IDispatchUnit {
     id: number;
-    user_id: number;
+    user_id?: number;
     dispatcher_id: number;
-    agent_unit_id: number;
+    agent_unit_id?: number;
     settings?: string;
     prompt?: string;
     next_action?: string;
     auto_next?: boolean;
-    agent_unit: IAgentUnit;
+    agent_unit?: IAgentUnit;
     readonly status?: number;
     readonly create_time?: Date; // 只读
     readonly update_time?: Date; // 只读
