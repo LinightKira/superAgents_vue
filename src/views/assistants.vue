@@ -17,10 +17,14 @@ const drawerTitle = ref('')
 const agentUnitID = ref<number>()
 
 onMounted(async () => {
+    get_agent_units()
+})
+
+async function get_agent_units() {
     let { data } = await axios.request<{ data: IResData }>('get', '/agent_units')
     const datas: IDatas = data.datas
     tableData.value = datas.agents
-})
+}
 const handleAdd = () => {
     drawerTitle.value = "添加"
     drawerVisible.value = true
@@ -35,9 +39,18 @@ const handleEdit = (row: IAgentUnit) => {
     agentUnitID.value = row.id
     console.log(agentUnitID.value)
 }
-const handleDelete = (index: number, row: IAgentUnit) => {
-    console.log(index, row)
-    alert('还没来得及写')
+const handleDelete = async (row: IAgentUnit) => {
+    let url = '/agent_unit/' + row.id;
+    try {
+        let { data } = await axios.request<{ data: IResData }>('delete', url);
+        if (data.code !== 200) {
+            alert(data.code + ':' + data.msg);
+        } else {
+            get_agent_units()
+        }
+    } catch (error) {
+        console.error('Error deleting agent_unit:', error);
+    }
 }
 
 function closeDrawer() {
@@ -73,7 +86,7 @@ function handleError(errorMessage: string) {
         <h2>智能助理</h2>
         <el-button @click="handleAdd" type="primary" :icon="Plus">添加</el-button>
     </div>
-    <el-table :data="tableData"  style="width: 100%">
+    <el-table :data="tableData" style="width: 100%">
         <el-table-column prop="name" label="名称(name)" width="300" />
         <el-table-column prop="prompt" label="提示词(prompt)" width="600" />
         <el-table-column prop="category" label="分类" />
@@ -81,7 +94,14 @@ function handleError(errorMessage: string) {
             <template #default="scope">
                 <!-- <el-button size="small" @click="handleRun(scope.row)">运行</el-button> -->
                 <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
-                <el-button size="small" type="danger" @click="handleDelete(scope.$index, scope.row)">删除</el-button>
+   
+                    <el-popconfirm title="确定要删除？">
+                        <template #reference>
+                            <el-button size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+                        </template>
+                    </el-popconfirm>
+  
+              
             </template>
         </el-table-column>
     </el-table>
