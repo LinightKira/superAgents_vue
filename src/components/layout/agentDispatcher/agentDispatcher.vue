@@ -11,7 +11,11 @@ const handleEditClick = () => {
   if (openDrawer) {
     openDrawer(dispatcher.id);
   }
-};
+}
+
+function handleDeleteClick(){
+  alert('还没开发')
+}
 </script>
 
 <template>
@@ -21,7 +25,7 @@ const handleEditClick = () => {
         <span>{{ dispatcher.name }}</span>
         <div>
           <el-button :icon="Edit" circle @click="handleEditClick" />
-          <el-button :icon="Delete" circle />
+          <el-button :icon="Delete" circle @click="handleDeleteClick" />
         </div>
       </div>
     </template>

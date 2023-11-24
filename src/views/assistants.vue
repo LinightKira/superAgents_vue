@@ -37,6 +37,7 @@ const handleEdit = (row: IAgentUnit) => {
 }
 const handleDelete = (index: number, row: IAgentUnit) => {
     console.log(index, row)
+    alert('还没来得及写')
 }
 
 function closeDrawer() {

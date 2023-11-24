@@ -32,8 +32,8 @@ let agentName = ref('')
 const isDrawerOpen = ref(false) //调度节点的新增or编辑面板
 const isCreateDispatcher = ref(false) //判断是否是调度节点的新增模式
 
-const dispatch_unit_visible = ref(false)  //调度节点单元变更标志位
-const isDispatchUnitChanged = ref(false) //判断调度节点单元是否发生变更，若变革，则提交保存的时候更新节点单元数据
+const dispatch_unit_visible = ref(false)  //调度节点单元控制框是否显示标志位
+const dispatch_unit_index = ref(-1)  //点击编辑时的索引记录
 
 
 
@@ -50,10 +50,11 @@ onMounted(async () => {
         description.value = Agent.value?.description
 
         //获取Agent所有调度数据
-        url = '/dispatchers/' + agentId
-        let dispatchersResponse = await axios.request<{ data: IResData }>('get', url)
-        console.log(dispatchersResponse.data)
-        Dispatchers.value = dispatchersResponse.data.datas?.dispatchers
+        get_dispathcers(Agent.value?.id)
+        // url = '/dispatchers/' + agentId
+        // let dispatchersResponse = await axios.request<{ data: IResData }>('get', url)
+        // console.log(dispatchersResponse.data)
+        // Dispatchers.value = dispatchersResponse.data.datas?.dispatchers
     } else {
         isCreate.value = true  //创建模式标志位
         isNameEditMode.value = true //编辑名称开启标志位
@@ -62,6 +63,14 @@ onMounted(async () => {
     }
 
 })
+
+async function get_dispathcers(agentId: number | undefined) {
+    //获取Agent所有调度数据
+    let url = '/dispatchers/' + agentId
+    let dispatchersResponse = await axios.request<{ data: IResData }>('get', url)
+    console.log(dispatchersResponse.data)
+    Dispatchers.value = dispatchersResponse.data.datas?.dispatchers
+}
 
 async function handleSaveName() {
 
@@ -129,15 +138,15 @@ async function handleSubmit_description() {
     }
 }
 
-function cancelClick_drawer() {
+function close_drawer() {
     isDrawerOpen.value = false
 }
 
 async function openDrawer(id?: number) {
     //初始化标志位
-    isDispatchUnitChanged.value = false
     if (id) {
         clearDispathcer()
+        isCreateDispatcher.value = false
         isDrawerOpen.value = true
         //获取调度节点
         let url = '/dispatcher/' + id
@@ -166,14 +175,36 @@ function clearDispathcer() {
 
 provide('openDrawer', openDrawer);
 
-function confirmClick_drawer() {
+async function confirmClick_drawer() {
     console.log('保存')
+    let pp = isCreateDispatcher.value ? 'post' : 'put'
+    //新增模式 AgentId初始化
+    if (isCreateDispatcher.value) {
+        if (Agent.value?.id) {
+            Dispatcher.value.agent_id = Agent.value.id
+        }
+    }
+    let { data } = await axios.request<{ data: IResData }>(pp, '/dispatcher', Dispatcher.value)
+
+    if (data.code != 200) {
+        alert(data.code + ':' + data.msg)
+    }
+
+    //刷新数据
+    get_dispathcers(Agent.value?.id)
+    //关闭面板
+    close_drawer()
 
 }
 
-//这里的赋值是指针赋值？
+
 const handleEdit_dispatchUnit = (row: IDispatchUnit) => {
+    // 拿到索引的方法
     Dispatcher_Unit.value = row
+    if (Dispatcher.value.dispatch_units) {
+        dispatch_unit_index.value = Dispatcher.value.dispatch_units.indexOf(row)
+        console.log('index:', dispatch_unit_index.value)
+    }
     dispatch_unit_visible.value = true
     get_agent_units()
 }
@@ -194,6 +225,13 @@ async function handleDelete_dispatchUnit(row: IDispatchUnit) {
             let { data } = await axios.request<{ data: IResData }>('delete', url);
             if (data.code !== 200) {
                 alert(data.code + ':' + data.msg);
+            } else {
+                if (Dispatcher.value.dispatch_units) {
+                    const index = Dispatcher.value.dispatch_units.indexOf(row);
+                    if (index !== -1) {
+                        Dispatcher.value.dispatch_units.splice(index, 1);
+                    }
+                }
             }
         } catch (error) {
             console.error('Error deleting dispatch unit:', error);
@@ -222,7 +260,8 @@ async function get_agent_units() {
 }
 
 function cancelClick_dialog_dispatchUnit() {
-    dispatch_unit_visible.value = false
+    dispatch_unit_visible.value = false  //关对话框
+    dispatch_unit_index.value = -1 //清除索引
     clear_dialog_dispatchUnit()
 }
 
@@ -235,22 +274,35 @@ function clear_dialog_dispatchUnit() {
 
 function confirmClick_dialog_dispatchUnit() {
 
-    if (Dispatcher_Unit.value.id == 0) {
-        console.log('新增')
-        Dispatcher_Unit.value.dispatcher_id = Dispatcher.value.id
-        if (Dispatcher_Unit.value.agent_unit_id != 0) {
-            let foundAgentUnit = AgentUnits.value.find(agentUnit => agentUnit.id === Dispatcher_Unit.value.agent_unit_id)
+    if (Dispatcher_Unit.value.id === 0) {
+        if (dispatch_unit_index.value === -1) {
+            console.log('新增')
+            Dispatcher_Unit.value.dispatcher_id = Dispatcher.value.id
+            if (Dispatcher_Unit.value.agent_unit_id !== 0) {
+                let foundAgentUnit = AgentUnits.value.find(agentUnit => agentUnit.id === Dispatcher_Unit.value.agent_unit_id)
 
-            if (foundAgentUnit) {
-                Dispatcher_Unit.value.agent_unit = foundAgentUnit
-                if (!Dispatcher.value?.dispatch_units) {
-                    // 如果 Dispatcher.value 或 dispatch_units 为 undefined，则进行处理
-                    Dispatcher.value.dispatch_units = []
+                if (foundAgentUnit) {
+                    Dispatcher_Unit.value.agent_unit = foundAgentUnit
+                    if (!Dispatcher.value?.dispatch_units) {
+                        // 如果 Dispatcher.value 或 dispatch_units 为 undefined，则进行处理
+                        Dispatcher.value.dispatch_units = []
+                    }
+                    Dispatcher.value.dispatch_units.push(Dispatcher_Unit.value)
                 }
-                Dispatcher.value.dispatch_units.push(Dispatcher_Unit.value)
-                isDispatchUnitChanged.value = true
             }
-
+        }
+        else {
+            console.log('新增修改')
+            if (Dispatcher.value.dispatch_units) {
+                Dispatcher.value.dispatch_units[dispatch_unit_index.value] = Dispatcher_Unit.value
+                let foundAgentUnit = AgentUnits.value.find(agentUnit => agentUnit.id === Dispatcher_Unit.value.agent_unit_id)
+                if (foundAgentUnit) {
+                    // 更新相应属性值
+                    Dispatcher.value.dispatch_units[dispatch_unit_index.value].agent_unit = foundAgentUnit;
+                    // 这里可以根据具体情况更新其他属性值
+                    Dispatcher.value.dispatch_units[dispatch_unit_index.value].agent_unit_id = foundAgentUnit.id
+                }
+            }
         }
 
     } else {
@@ -258,23 +310,15 @@ function confirmClick_dialog_dispatchUnit() {
         // 找到要修改的 Dispatch Unit 在 Dispatch Units 数组中的索引
         if (Dispatcher.value.dispatch_units) {
             const index = Dispatcher.value.dispatch_units.findIndex(unit => unit.id === Dispatcher_Unit.value.id)
-            console.log('index:',index,Dispatcher.value.dispatch_units[index])
             if (index !== -1) {
-                //修改后的agent_unit_id和原始id不相同 证明确实修改了
-                console.log(Dispatcher.value.dispatch_units[index].agent_unit_id,Dispatcher_Unit.value.agent_unit_id)
-                if (Dispatcher.value.dispatch_units[index].agent_unit_id != Dispatcher_Unit.value.agent_unit_id) {
-                    
-                    let foundAgentUnit = AgentUnits.value.find(agentUnit => agentUnit.id === Dispatcher_Unit.value.agent_unit_id)
-                    console.log('foundagentunit:',foundAgentUnit)
-                    if (foundAgentUnit) {
-                        console.log('agentunit:',foundAgentUnit)
-                        // 更新相应属性值
-                        Dispatcher.value.dispatch_units[index].agent_unit = foundAgentUnit;
-                        // 这里可以根据具体情况更新其他属性值
-                        Dispatcher.value.dispatch_units[index].agent_unit_id=foundAgentUnit.id
-                        // 标记 Dispatch Unit 已被修改
-                        isDispatchUnitChanged.value = true;
-                    }
+
+                let foundAgentUnit = AgentUnits.value.find(agentUnit => agentUnit.id === Dispatcher_Unit.value.agent_unit_id)
+                if (foundAgentUnit) {
+                    console.log('agentunit:', foundAgentUnit)
+                    // 更新相应属性值
+                    Dispatcher.value.dispatch_units[index].agent_unit = foundAgentUnit;
+                    // 这里可以根据具体情况更新其他属性值
+                    Dispatcher.value.dispatch_units[index].agent_unit_id = foundAgentUnit.id
                 }
             } else {
                 // 没有找到要修改的 Dispatch Unit
@@ -300,7 +344,7 @@ function confirmClick_dialog_dispatchUnit() {
 
     </div>
     <el-input class="textarea" v-model="description" maxlength="30" placeholder="请输入助手的描述" show-word-limit type="textarea"
-        :disabled="isCreate" @blur="handleBlur_description" @keyup.enter="handleSubmit_description" />
+        :disabled="isCreate" @blur="handleBlur_description" />
     <div v-if="!isCreate">
         <AgentDispatchers :dispatchers="Dispatchers" @openDrawer="openDrawer" />
     </div>
@@ -315,34 +359,38 @@ function confirmClick_dialog_dispatchUnit() {
                 <el-input v-model="Dispatcher.name" placeholder="请填写..." maxlength="20" show-word-limit />
                 <h3>节点说明</h3>
                 <el-input v-model="Dispatcher.description" placeholder="请填写..." maxlength="30" show-word-limit />
+
                 <h3>执行助理</h3>
-                <div>
+                <div v-if="isCreateDispatcher">
+                    <span>添加节点成功后解锁添加助理</span>
+                </div>
+                <div v-else>
                     <el-table :data="Dispatcher.dispatch_units" style="width: 100%" @row-click="handleEdit_dispatchUnit">
                         <el-table-column prop="agent_unit.name" label="助理名称" width="180" />
                         <el-table-column prop="next_action" label="下一步设置" width="180" />
                         <el-table-column prop="auto_next" label="自动执行到下一步" />
                         <el-table-column label="操作">
-
                             <template #default="scope">
                                 <el-popconfirm title="是否要删除？">
-                                    <template #reference>
+                                    <template #reference >
                                         <el-button type="danger" :icon="Delete" circle
                                             @click.native.stop="handleDelete_dispatchUnit(scope.row)" />
                                     </template>
                                 </el-popconfirm>
                             </template>
-
                         </el-table-column>
                     </el-table>
                     <div> <el-button type="primary" plain class="add-dispatcher-unit-button"
                             @click="handleAdd_dispatcher_unit">添加助理</el-button></div>
                 </div>
+
                 <h3>是否设置为任务起点</h3>
+                <el-switch v-model="Dispatcher.is_Start" />
             </div>
         </template>
         <template #footer>
             <div style="flex: auto">
-                <el-button @click="cancelClick_drawer">取消</el-button>
+                <el-button @click="close_drawer">取消</el-button>
                 <el-button type="primary" @click="confirmClick_drawer">确认</el-button>
             </div>
         </template>

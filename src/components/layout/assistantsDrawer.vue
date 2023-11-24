@@ -72,7 +72,7 @@ onMounted(async () => {
             let { data } = await axios.request<{ data: IResData }>('get', url);
 
             agentUnit.value = data.datas as IAgentUnit;
-            console.log("au:", agentUnit.value)
+ 
         } catch (error) {
             console.error('Error fetching agentUnit:', error);
         }
