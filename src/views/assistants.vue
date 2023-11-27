@@ -25,10 +25,15 @@ async function get_agent_units() {
     const datas: IDatas = data.datas
     tableData.value = datas.agents
 }
-const handleAdd = () => {
+const handleAdd = (row?: IAgentUnit) => {
+
     drawerTitle.value = "添加"
     drawerVisible.value = true
-    console.log(drawerVisible.value)
+    //复制添加模式
+    if(row){
+        agentUnitID.value = row.id 
+    }
+
 }
 
 
@@ -37,7 +42,6 @@ const handleEdit = (row: IAgentUnit) => {
     drawerTitle.value = "编辑"
     drawerVisible.value = true
     agentUnitID.value = row.id
-    console.log(agentUnitID.value)
 }
 const handleDelete = async (row: IAgentUnit) => {
     let url = '/agent_unit/' + row.id;
@@ -78,8 +82,7 @@ function handleError(errorMessage: string) {
 
 <template>
     <div v-if="drawerVisible">
-        <assistantsDrawer :visible="drawerVisible" :title="drawerTitle" :agentUnitID="agentUnitID" @add="handleAdd"
-            @modify="handleEdit" @close="closeDrawer" @success="handleSuccess" @error="handleError" />
+        <assistantsDrawer :visible="drawerVisible" :title="drawerTitle" :agentUnitID="agentUnitID" @close="closeDrawer" @success="handleSuccess" @error="handleError" />
     </div>
 
     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -94,14 +97,14 @@ function handleError(errorMessage: string) {
             <template #default="scope">
                 <!-- <el-button size="small" @click="handleRun(scope.row)">运行</el-button> -->
                 <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
-   
-                    <el-popconfirm title="确定要删除？">
-                        <template #reference>
-                            <el-button size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
-                        </template>
-                    </el-popconfirm>
-  
-              
+                <el-button size="small" @click="handleAdd(scope.row)">复制</el-button>
+
+                <el-popconfirm title="确定要删除？" @confirm="handleDelete(scope.row)">
+                    <template #reference>
+                        <el-button size="small" type="danger" @click="">删除</el-button>
+                    </template>
+                </el-popconfirm>
+
             </template>
         </el-table-column>
     </el-table>

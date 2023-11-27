@@ -1,8 +1,8 @@
 <template>
     <el-row class="page_box">
         <el-col :span="24" class="head_box">
-            <el-button type="primary"  @click="handleAddWorkflow">
-                新增工作流
+            <el-button type="primary" @click="handleAddWorkflow">
+                新增项目
             </el-button>
         </el-col>
         <div class="lists_box">
@@ -22,15 +22,37 @@
                     <div style="padding: 14px">
                         <el-text truncated>{{ v.name }}</el-text>
                         <div class="bottom">
-                            <el-button type="success" class="button">运行</el-button>
-                            <el-button type="primary" class="button" @click="() => v.id !== undefined && goToAgentDetails(v.id)">查看</el-button>
+                            <el-button type="success" class="button"
+                                @click="() => v.id !== undefined && handlerRunAgent(v.id)">运行</el-button>
+                            <el-button type="primary" class="button"
+                                @click="() => v.id !== undefined && goToAgentDetails(v.id)">查看</el-button>
                         </div>
                     </div>
                 </el-card>
             </el-col>
         </div>
-        
     </el-row>
+
+    <el-drawer v-model="run_task_drawer">
+        <template #header>
+            <h4>运行：{{ run_Agent?.name }}</h4>
+        </template>
+        <template #default>
+            <h4>说明</h4>
+            <div>{{ run_Agent?.description }}</div>
+            <h4>输入：</h4>
+            <el-input v-model="input_data" show-word-limit type="textarea" maxlength="500" minlength="2"
+                :autosize="{ minRows: 10 }" placeholder="请输入..." />
+
+
+        </template>
+        <template #footer>
+            <div style="flex: auto">
+                <el-button @click="() => { run_task_drawer = false }">取消</el-button>
+                <el-button type="primary" @click="handlerRun">运行</el-button>
+            </div>
+        </template>
+    </el-drawer>
 </template>
   
 <script lang="ts" setup>
@@ -50,6 +72,10 @@ interface IDatas {
     total: number
 }
 
+const run_task_drawer = ref(false)  //运行一个项目的面板显示标志位
+const input_data = ref('')
+const run_Agent = ref<IAgent>()
+
 onMounted(async () => {
     let { data } = await axios.request<{ data: IResData }>('get', '/agents')
     const datas: IDatas = data.datas
@@ -65,11 +91,21 @@ function goToAgentDetails(agentid: number) {
         }
     });
 }
- function handleAddWorkflow(){
+function handleAddWorkflow() {
     router.push({
         name: "agentdetail"
     });
- }
+}
+
+function handlerRunAgent(agentid: number) {
+    run_Agent.value = AgentsData.value.find(agent => agent.id === agentid)
+
+    run_task_drawer.value = true
+}
+
+function handlerRun() {
+
+}
 
 
 </script>
@@ -82,9 +118,10 @@ function goToAgentDetails(agentid: number) {
     box-sizing: 100%;
     overflow: hidden;
 }
+
 .head_box {
     position: absolute;
-    left:0;
+    left: 0;
     top: 0;
     width: 100%;
     display: flex;
@@ -102,8 +139,9 @@ function goToAgentDetails(agentid: number) {
     overflow-y: auto;
     margin-left: -4.1666666667%;
     padding-left: 2%;
-    box-sizing:border-box;
+    box-sizing: border-box;
 }
+
 .bottom {
     margin-top: 13px;
     line-height: 12px;
@@ -144,4 +182,5 @@ function goToAgentDetails(agentid: number) {
     /* 如果文本内容过多，显示省略号 */
     white-space: normal;
     /* 自动换行 */
-}</style>
+}
+</style>

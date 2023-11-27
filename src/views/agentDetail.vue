@@ -371,10 +371,10 @@ function confirmClick_dialog_dispatchUnit() {
                         <el-table-column prop="auto_next" label="自动执行到下一步" />
                         <el-table-column label="操作">
                             <template #default="scope">
-                                <el-popconfirm title="是否要删除？">
+                                <el-popconfirm title="是否要删除？"  @confirm="handleDelete_dispatchUnit(scope.row)">
                                     <template #reference >
                                         <el-button type="danger" :icon="Delete" circle
-                                            @click.native.stop="handleDelete_dispatchUnit(scope.row)" />
+                                            @click.native.stop="" />
                                     </template>
                                 </el-popconfirm>
                             </template>
